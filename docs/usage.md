@@ -24,12 +24,21 @@ nextflow run main.nf \
   --outdir results
 ```
 
+To enable alignment, provide a STAR genome index directory:
+
+```bash
+nextflow run main.nf \
+  -params-file params.yml \
+  --star_index /abs/path/to/star_index
+```
+
 This scaffold currently includes:
 
 - input validation
 - samplesheet parsing
 - FASTQ QC/trimming with `fastp`
 - MultiQC aggregation of `fastp` reports
+- optional STAR alignment of trimmed reads
 - differential expression analysis with DESeq2
 
 ## QC parameters
@@ -38,6 +47,9 @@ Configured in `params.yml`:
 
 - `fastp_threads`: thread count passed to `fastp`
 - `fastp_extra`: optional additional `fastp` CLI arguments
+- `star_index`: optional STAR genome index directory; if unset, alignment is skipped
+- `star_threads`: thread count passed to STAR and `samtools index`
+- `star_extra`: optional additional STAR CLI arguments
 
 QC outputs are written to:
 
@@ -46,6 +58,13 @@ QC outputs are written to:
 - per-sample reports (`*.fastp.html`, `*.fastp.json`)
 - `results/qc/multiqc/`
 - aggregated report (`multiqc_report.html`) and parsed data directory (`multiqc_data/`)
+
+If `star_index` is set, alignment outputs are written to:
+
+- `results/alignment/star/`
+- coordinate-sorted BAMs (`*.sorted.bam`) and indexes (`*.sorted.bam.bai`)
+- STAR summary logs (`*.Log.final.out`)
+- splice junction tables (`*.SJ.out.tab`)
 
 ## Differential expression parameters
 

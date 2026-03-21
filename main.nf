@@ -2,6 +2,7 @@ nextflow.enable.dsl = 2
 
 include { FASTP } from './modules/fastp'
 include { MULTIQC } from './modules/multiqc'
+include { STAR_ALIGN } from './modules/star_align'
 
 /*
  * Validate required runtime parameters.
@@ -29,6 +30,13 @@ def validateParams() {
   }
   if (!params.control_level || !params.treatment_level) {
     error "Missing required contrast levels: --control_level and --treatment_level"
+  }
+
+  if (params.star_index) {
+    def starIndex = file(params.star_index)
+    if (!starIndex.exists()) {
+      error "STAR index directory not found: ${params.star_index}"
+    }
   }
 }
 
@@ -138,6 +146,14 @@ workflow {
       .mix(FASTP.out.json)
       .collect()
   )
+
+  if (params.star_index) {
+    def star_reads_ch = FASTP.out.reads.map { sample, read_1, read_2, strandedness, condition ->
+      tuple(sample, read_1, read_2, strandedness, condition, file(params.star_index))
+    }
+
+    STAR_ALIGN(star_reads_ch)
+  }
 
   DIFFERENTIAL_EXPRESSION(
     file(params.counts_matrix),

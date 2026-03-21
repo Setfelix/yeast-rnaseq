@@ -10,6 +10,7 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 - `conf/`: base, Singularity, and profile-specific config
 - `modules/fastp.nf`: FASTQ QC/trimming module using `fastp`
 - `modules/multiqc.nf`: aggregate QC reporting with `MultiQC`
+- `modules/star_align.nf`: optional STAR alignment module
 - `containers/Singularity.def`: container recipe with core RNA-seq tools and DESeq2
 - `assets/samplesheet.example.csv`: example input sheet
 - `assets/samplesheet.de.example.csv`: DE-ready example input sheet with condition labels
@@ -55,6 +56,16 @@ It also writes an aggregated MultiQC report to `results/qc/multiqc/`:
 
 - `multiqc_report.html`
 - `multiqc_data/`
+
+## Optional alignment output
+
+If `--star_index` is provided, the pipeline also writes STAR alignment outputs to
+`results/alignment/star/`:
+
+- `${sample}.sorted.bam`
+- `${sample}.sorted.bam.bai`
+- `${sample}.Log.final.out`
+- `${sample}.SJ.out.tab`
 
 ## License
 
