@@ -10,6 +10,7 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 - `conf/`: base, Singularity, and profile-specific config
 - `modules/fastp.nf`: FASTQ QC/trimming module using `fastp`
 - `modules/multiqc.nf`: aggregate QC reporting with `MultiQC`
+- `modules/star_index.nf`: optional STAR genome index generation
 - `modules/star_align.nf`: optional STAR alignment module
 - `modules/alignment_qc.nf`: post-alignment QC with `samtools flagstat`
 - `modules/featurecounts.nf`: optional `featureCounts` gene quantification
@@ -54,6 +55,15 @@ By default (`--de_counts_source auto`), the pipeline prefers generated counts wh
 available and otherwise falls back to `--counts_matrix`. You can force
 `external` or `generated` explicitly if needed.
 
+Reference-related paths are configured in `params.yml`:
+
+- `reference_fasta`
+- `star_index`
+- `annotation_gtf`
+
+If `star_index` is not provided, the pipeline can build a STAR index from
+`reference_fasta` and `annotation_gtf`.
+
 ## QC output
 
 The pipeline writes per-sample `fastp` outputs to `results/qc/fastp/`:
@@ -78,6 +88,9 @@ If `--star_index` is provided, the pipeline also writes STAR alignment outputs t
 - `${sample}.sorted.bam.bai`
 - `${sample}.Log.final.out`
 - `${sample}.SJ.out.tab`
+
+If the STAR index is generated in-pipeline, it is written to
+`results/reference/star_index/`.
 
 It also writes post-alignment QC summaries to `results/qc/alignment/`:
 

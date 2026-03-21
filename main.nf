@@ -2,6 +2,7 @@ nextflow.enable.dsl = 2
 
 include { FASTP } from './modules/fastp'
 include { MULTIQC } from './modules/multiqc'
+include { STAR_INDEX } from './modules/star_index'
 include { STAR_ALIGN } from './modules/star_align'
 include { ALIGNMENT_QC } from './modules/alignment_qc'
 include { FEATURECOUNTS } from './modules/featurecounts'
@@ -47,13 +48,23 @@ def validateParams() {
     }
   }
 
+  if (params.reference_fasta) {
+    def reference = file(params.reference_fasta)
+    if (!reference.exists()) {
+      error "Reference FASTA not found: ${params.reference_fasta}"
+    }
+    if (!params.star_index && !params.annotation_gtf) {
+      error "--reference_fasta requires --annotation_gtf when STAR index generation is needed"
+    }
+  }
+
   if (params.annotation_gtf) {
     def annotation = file(params.annotation_gtf)
     if (!annotation.exists()) {
       error "Annotation GTF not found: ${params.annotation_gtf}"
     }
-    if (!params.star_index) {
-      error "--annotation_gtf requires --star_index so counts can be generated from alignments"
+    if (!params.star_index && !params.reference_fasta) {
+      error "--annotation_gtf requires either --star_index or --reference_fasta"
     }
   }
 
@@ -62,7 +73,7 @@ def validateParams() {
   }
 
   if (params.de_counts_source == 'generated' && !params.annotation_gtf) {
-    error "--de_counts_source generated requires --annotation_gtf and --star_index"
+    error "--de_counts_source generated requires --annotation_gtf and either --star_index or --reference_fasta"
   }
 }
 
@@ -167,14 +178,25 @@ workflow {
 
   def external_counts_ch = params.counts_matrix ? Channel.value(file(params.counts_matrix)) : null
   def generated_counts_ch = null
+  def resolved_star_index_ch = null
 
   FASTP(samples_ch)
 
   def multiqc_inputs = FASTP.out.html.mix(FASTP.out.json)
 
-  if (params.star_index) {
-    def star_reads_ch = FASTP.out.reads.map { sample, read_1, read_2, strandedness, condition ->
-      tuple(sample, read_1, read_2, strandedness, condition, file(params.star_index))
+  if (params.star_index || params.reference_fasta) {
+    if (params.star_index) {
+      resolved_star_index_ch = Channel.value(file(params.star_index))
+    } else {
+      STAR_INDEX(
+        file(params.reference_fasta),
+        file(params.annotation_gtf)
+      )
+      resolved_star_index_ch = STAR_INDEX.out.index
+    }
+
+    def star_reads_ch = FASTP.out.reads.combine(resolved_star_index_ch).map { sample, read_1, read_2, strandedness, condition, star_index ->
+      tuple(sample, read_1, read_2, strandedness, condition, star_index)
     }
 
     STAR_ALIGN(star_reads_ch)

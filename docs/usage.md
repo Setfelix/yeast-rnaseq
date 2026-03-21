@@ -32,6 +32,15 @@ nextflow run main.nf \
   --star_index /abs/path/to/star_index
 ```
 
+Reference-related inputs can be declared in `params.yml`:
+
+- `reference_fasta`: reference genome FASTA path
+- `star_index`: STAR genome index directory
+- `annotation_gtf`: gene annotation GTF path
+
+If `star_index` is omitted, the pipeline can build it from `reference_fasta` and
+`annotation_gtf`.
+
 To generate counts from aligned reads and use them for downstream DE analysis:
 
 ```bash
@@ -68,7 +77,11 @@ Configured in `params.yml`:
 
 - `fastp_threads`: thread count passed to `fastp`
 - `fastp_extra`: optional additional `fastp` CLI arguments
-- `star_index`: optional STAR genome index directory; if unset, alignment is skipped
+- `reference_fasta`: optional reference genome FASTA path
+- `star_index`: optional STAR genome index directory; if unset, the pipeline can build one from `reference_fasta` and `annotation_gtf`
+- `star_index_threads`: thread count passed to STAR genome generation
+- `star_index_overhang`: STAR `sjdbOverhang` used during genome generation
+- `star_index_extra`: optional additional STAR genome generation CLI arguments
 - `star_threads`: thread count passed to STAR and `samtools index`
 - `star_extra`: optional additional STAR CLI arguments
 - `annotation_gtf`: optional annotation file for `featureCounts`; requires `star_index`
@@ -90,6 +103,11 @@ If `star_index` is set, alignment outputs are written to:
 - coordinate-sorted BAMs (`*.sorted.bam`) and indexes (`*.sorted.bam.bai`)
 - STAR summary logs (`*.Log.final.out`)
 - splice junction tables (`*.SJ.out.tab`)
+
+If `star_index` is not set and `reference_fasta` is provided, the generated index
+is written to:
+
+- `results/reference/star_index/`
 
 Post-alignment QC outputs are written to:
 
