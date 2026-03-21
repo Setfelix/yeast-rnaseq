@@ -1,0 +1,11 @@
+# Pipeline params
+samplesheet: assets/samplesheet.de.example.csv
+counts_matrix: assets/counts.example.tsv
+condition_col: condition
+control_level: control
+treatment_level: treated
+fdr_threshold: 0.05
+fastp_threads: 2
+fastp_extra: ""
+outdir: results
+container: file://./containers/yeast-rnaseq.sif

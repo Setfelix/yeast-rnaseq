@@ -1,0 +1,36 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%labels
+  Author yeast-rnaseq-nf
+  Description Bioinformatics environment for yeast RNA-seq scaffold
+
+%environment
+  export LC_ALL=C
+  export PATH=/usr/local/bin:$PATH
+
+%post
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    fastp \
+    samtools \
+    subread \
+    rna-star \
+    wget \
+    python3 \
+    python3-pip \
+    r-base \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    ca-certificates
+
+  python3 -m pip install --no-cache-dir multiqc
+  Rscript -e "install.packages('BiocManager', repos='https://cloud.r-project.org')"
+  Rscript -e "BiocManager::install('DESeq2', ask=FALSE, update=FALSE)"
+
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+
+%runscript
+  exec "$@"
