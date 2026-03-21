@@ -19,4 +19,4 @@ results/
 Thumbs.db
 .vscode/
 .idea/
-.nextflow.log
+.nextflow.log*

@@ -22,6 +22,12 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 nextflow run main.nf -params-file params.yml
 ```
 
+For containerized execution with Singularity/Apptainer:
+
+```bash
+nextflow run main.nf -params-file params.yml -profile singularity
+```
+
 ## Stub test run
 
 ```bash

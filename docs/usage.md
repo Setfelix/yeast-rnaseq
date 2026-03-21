@@ -8,6 +8,13 @@ From the repository root:
 nextflow run main.nf -params-file params.yml
 ```
 
+This default run uses the local environment and does not require Singularity.
+To run with the configured container instead:
+
+```bash
+nextflow run main.nf -params-file params.yml -profile singularity
+```
+
 Or override parameters on the CLI:
 
 ```bash
@@ -76,9 +83,10 @@ Using Singularity:
 singularity build containers/yeast-rnaseq.sif containers/Singularity.def
 ```
 
-After building, the default config uses:
+After building, run the pipeline with:
 
-- `file://./containers/yeast-rnaseq.sif` (via `params.yml`)
+- `-profile singularity`
+- `container: file://./containers/yeast-rnaseq.sif` (via `params.yml`)
 
 You can override container path at runtime if needed:
 
