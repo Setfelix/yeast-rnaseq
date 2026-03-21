@@ -11,6 +11,7 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 - `modules/fastp.nf`: FASTQ QC/trimming module using `fastp`
 - `modules/multiqc.nf`: aggregate QC reporting with `MultiQC`
 - `modules/star_align.nf`: optional STAR alignment module
+- `modules/featurecounts.nf`: optional `featureCounts` gene quantification
 - `containers/Singularity.def`: container recipe with core RNA-seq tools and DESeq2
 - `assets/samplesheet.example.csv`: example input sheet
 - `assets/samplesheet.de.example.csv`: DE-ready example input sheet with condition labels
@@ -43,6 +44,11 @@ The pipeline writes:
 - `results/differential_expression.tsv`: all genes with BH-FDR corrected `padj`
 - `results/differential_expression_fdr.tsv`: genes passing `padj <= fdr_threshold`
 
+Differential expression can use either:
+
+- an external counts matrix via `--counts_matrix`
+- pipeline-generated counts when both `--star_index` and `--annotation_gtf` are provided
+
 ## QC output
 
 The pipeline writes per-sample `fastp` outputs to `results/qc/fastp/`:
@@ -66,6 +72,12 @@ If `--star_index` is provided, the pipeline also writes STAR alignment outputs t
 - `${sample}.sorted.bam.bai`
 - `${sample}.Log.final.out`
 - `${sample}.SJ.out.tab`
+
+If `--annotation_gtf` is also provided, the pipeline writes count outputs to
+`results/counts/`:
+
+- `featurecounts.tsv`
+- `featurecounts.summary`
 
 ## License
 

@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 include { FASTP } from './modules/fastp'
 include { MULTIQC } from './modules/multiqc'
 include { STAR_ALIGN } from './modules/star_align'
+include { FEATURECOUNTS } from './modules/featurecounts'
 
 /*
  * Validate required runtime parameters.
@@ -11,18 +12,20 @@ def validateParams() {
   if (!params.samplesheet) {
     error "Missing required parameter: --samplesheet"
   }
-  if (!params.counts_matrix) {
-    error "Missing required parameter: --counts_matrix"
-  }
-
   def sheet = file(params.samplesheet)
   if (!sheet.exists()) {
     error "Samplesheet not found: ${params.samplesheet}"
   }
 
-  def counts = file(params.counts_matrix)
-  if (!counts.exists()) {
-    error "Counts matrix not found: ${params.counts_matrix}"
+  if (!params.counts_matrix && !params.annotation_gtf) {
+    error "Provide either --counts_matrix or --annotation_gtf"
+  }
+
+  if (params.counts_matrix) {
+    def counts = file(params.counts_matrix)
+    if (!counts.exists()) {
+      error "Counts matrix not found: ${params.counts_matrix}"
+    }
   }
 
   if (!params.condition_col) {
@@ -36,6 +39,16 @@ def validateParams() {
     def starIndex = file(params.star_index)
     if (!starIndex.exists()) {
       error "STAR index directory not found: ${params.star_index}"
+    }
+  }
+
+  if (params.annotation_gtf) {
+    def annotation = file(params.annotation_gtf)
+    if (!annotation.exists()) {
+      error "Annotation GTF not found: ${params.annotation_gtf}"
+    }
+    if (!params.star_index) {
+      error "--annotation_gtf requires --star_index so counts can be generated from alignments"
     }
   }
 }
@@ -139,6 +152,8 @@ workflow {
       tuple(row.sample, row.fastq_1, row.fastq_2, row.strandedness, row[params.condition_col])
     }
 
+  def counts_for_de = params.counts_matrix ? Channel.value(file(params.counts_matrix)) : null
+
   FASTP(samples_ch)
 
   MULTIQC(
@@ -153,10 +168,20 @@ workflow {
     }
 
     STAR_ALIGN(star_reads_ch)
+
+    if (params.annotation_gtf) {
+      FEATURECOUNTS(
+        STAR_ALIGN.out.bam
+          .map { sample, bam, bai, strandedness, condition -> bam }
+          .collect(),
+        file(params.annotation_gtf)
+      )
+      counts_for_de = FEATURECOUNTS.out.counts
+    }
   }
 
   DIFFERENTIAL_EXPRESSION(
-    file(params.counts_matrix),
+    counts_for_de,
     file(params.samplesheet)
   )
 }

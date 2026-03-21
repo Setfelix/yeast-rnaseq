@@ -32,6 +32,15 @@ nextflow run main.nf \
   --star_index /abs/path/to/star_index
 ```
 
+To generate counts from aligned reads and use them for downstream DE analysis:
+
+```bash
+nextflow run main.nf \
+  -params-file params.yml \
+  --star_index /abs/path/to/star_index \
+  --annotation_gtf /abs/path/to/genes.gtf
+```
+
 This scaffold currently includes:
 
 - input validation
@@ -39,6 +48,7 @@ This scaffold currently includes:
 - FASTQ QC/trimming with `fastp`
 - MultiQC aggregation of `fastp` reports
 - optional STAR alignment of trimmed reads
+- optional `featureCounts` quantification from aligned BAMs
 - differential expression analysis with DESeq2
 
 ## QC parameters
@@ -50,6 +60,9 @@ Configured in `params.yml`:
 - `star_index`: optional STAR genome index directory; if unset, alignment is skipped
 - `star_threads`: thread count passed to STAR and `samtools index`
 - `star_extra`: optional additional STAR CLI arguments
+- `annotation_gtf`: optional annotation file for `featureCounts`; requires `star_index`
+- `featurecounts_threads`: thread count passed to `featureCounts`
+- `featurecounts_extra`: optional additional `featureCounts` CLI arguments
 
 QC outputs are written to:
 
@@ -66,15 +79,26 @@ If `star_index` is set, alignment outputs are written to:
 - STAR summary logs (`*.Log.final.out`)
 - splice junction tables (`*.SJ.out.tab`)
 
+If `annotation_gtf` is also set, count outputs are written to:
+
+- `results/counts/`
+- gene count matrix (`featurecounts.tsv`)
+- `featureCounts` summary (`featurecounts.summary`)
+
 ## Differential expression parameters
 
 Configured in `params.yml`:
 
-- `counts_matrix`: TSV with first column `gene` and remaining columns as sample IDs
+- `counts_matrix`: optional external TSV with first column `gene` and remaining columns as sample IDs
 - `condition_col`: samplesheet column used for group labels
 - `control_level`: reference condition
 - `treatment_level`: condition compared against control
 - `fdr_threshold`: significance cutoff for filtered output
+
+Provide either:
+
+- `counts_matrix`
+- or `annotation_gtf` together with `star_index` to generate counts in-pipeline
 
 Expected samplesheet columns:
 

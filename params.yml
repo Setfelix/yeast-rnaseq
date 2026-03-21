@@ -10,5 +10,8 @@ fastp_extra: ""
 star_index: null
 star_threads: 4
 star_extra: ""
+annotation_gtf: null
+featurecounts_threads: 2
+featurecounts_extra: ""
 outdir: results
 container: file://./containers/yeast-rnaseq.sif
