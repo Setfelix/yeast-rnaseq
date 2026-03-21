@@ -41,6 +41,16 @@ nextflow run main.nf \
   --annotation_gtf /abs/path/to/genes.gtf
 ```
 
+To force DE to use the external matrix even when generated counts are available:
+
+```bash
+nextflow run main.nf \
+  -params-file params.yml \
+  --star_index /abs/path/to/star_index \
+  --annotation_gtf /abs/path/to/genes.gtf \
+  --de_counts_source external
+```
+
 This scaffold currently includes:
 
 - input validation
@@ -97,6 +107,7 @@ If `annotation_gtf` is also set, count outputs are written to:
 Configured in `params.yml`:
 
 - `counts_matrix`: optional external TSV with first column `gene` and remaining columns as sample IDs
+- `de_counts_source`: one of `auto`, `external`, or `generated`
 - `condition_col`: samplesheet column used for group labels
 - `control_level`: reference condition
 - `treatment_level`: condition compared against control
@@ -106,6 +117,8 @@ Provide either:
 
 - `counts_matrix`
 - or `annotation_gtf` together with `star_index` to generate counts in-pipeline
+
+With `de_counts_source: auto`, generated counts are preferred when available.
 
 Expected samplesheet columns:
 

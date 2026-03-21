@@ -50,6 +50,10 @@ Differential expression can use either:
 - an external counts matrix via `--counts_matrix`
 - pipeline-generated counts when both `--star_index` and `--annotation_gtf` are provided
 
+By default (`--de_counts_source auto`), the pipeline prefers generated counts when
+available and otherwise falls back to `--counts_matrix`. You can force
+`external` or `generated` explicitly if needed.
+
 ## QC output
 
 The pipeline writes per-sample `fastp` outputs to `results/qc/fastp/`:

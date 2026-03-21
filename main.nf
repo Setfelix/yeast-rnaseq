@@ -18,6 +18,10 @@ def validateParams() {
     error "Samplesheet not found: ${params.samplesheet}"
   }
 
+  if (!['auto', 'external', 'generated'].contains(params.de_counts_source)) {
+    error "Invalid --de_counts_source: ${params.de_counts_source}. Use one of: auto, external, generated"
+  }
+
   if (!params.counts_matrix && !params.annotation_gtf) {
     error "Provide either --counts_matrix or --annotation_gtf"
   }
@@ -51,6 +55,14 @@ def validateParams() {
     if (!params.star_index) {
       error "--annotation_gtf requires --star_index so counts can be generated from alignments"
     }
+  }
+
+  if (params.de_counts_source == 'external' && !params.counts_matrix) {
+    error "--de_counts_source external requires --counts_matrix"
+  }
+
+  if (params.de_counts_source == 'generated' && !params.annotation_gtf) {
+    error "--de_counts_source generated requires --annotation_gtf and --star_index"
   }
 }
 
@@ -153,7 +165,8 @@ workflow {
       tuple(row.sample, row.fastq_1, row.fastq_2, row.strandedness, row[params.condition_col])
     }
 
-  def counts_for_de = params.counts_matrix ? Channel.value(file(params.counts_matrix)) : null
+  def external_counts_ch = params.counts_matrix ? Channel.value(file(params.counts_matrix)) : null
+  def generated_counts_ch = null
 
   FASTP(samples_ch)
 
@@ -177,8 +190,20 @@ workflow {
           .collect(),
         file(params.annotation_gtf)
       )
-      counts_for_de = FEATURECOUNTS.out.counts
+      generated_counts_ch = FEATURECOUNTS.out.counts
     }
+  }
+
+  def counts_for_de
+  switch (params.de_counts_source) {
+    case 'external':
+      counts_for_de = external_counts_ch
+      break
+    case 'generated':
+      counts_for_de = generated_counts_ch
+      break
+    default:
+      counts_for_de = generated_counts_ch ?: external_counts_ch
   }
 
   MULTIQC(
