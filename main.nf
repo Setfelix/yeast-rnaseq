@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 include { FASTP } from './modules/fastp'
 include { MULTIQC } from './modules/multiqc'
 include { STAR_ALIGN } from './modules/star_align'
+include { ALIGNMENT_QC } from './modules/alignment_qc'
 include { FEATURECOUNTS } from './modules/featurecounts'
 
 /*
@@ -156,11 +157,7 @@ workflow {
 
   FASTP(samples_ch)
 
-  MULTIQC(
-    FASTP.out.html
-      .mix(FASTP.out.json)
-      .collect()
-  )
+  def multiqc_inputs = FASTP.out.html.mix(FASTP.out.json)
 
   if (params.star_index) {
     def star_reads_ch = FASTP.out.reads.map { sample, read_1, read_2, strandedness, condition ->
@@ -168,6 +165,10 @@ workflow {
     }
 
     STAR_ALIGN(star_reads_ch)
+
+    ALIGNMENT_QC(STAR_ALIGN.out.bam)
+
+    multiqc_inputs = multiqc_inputs.mix(ALIGNMENT_QC.out.flagstat)
 
     if (params.annotation_gtf) {
       FEATURECOUNTS(
@@ -179,6 +180,10 @@ workflow {
       counts_for_de = FEATURECOUNTS.out.counts
     }
   }
+
+  MULTIQC(
+    multiqc_inputs.collect()
+  )
 
   DIFFERENTIAL_EXPRESSION(
     counts_for_de,

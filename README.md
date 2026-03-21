@@ -11,6 +11,7 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 - `modules/fastp.nf`: FASTQ QC/trimming module using `fastp`
 - `modules/multiqc.nf`: aggregate QC reporting with `MultiQC`
 - `modules/star_align.nf`: optional STAR alignment module
+- `modules/alignment_qc.nf`: post-alignment QC with `samtools flagstat`
 - `modules/featurecounts.nf`: optional `featureCounts` gene quantification
 - `containers/Singularity.def`: container recipe with core RNA-seq tools and DESeq2
 - `assets/samplesheet.example.csv`: example input sheet
@@ -58,7 +59,8 @@ The pipeline writes per-sample `fastp` outputs to `results/qc/fastp/`:
 - `${sample}.fastp.html`
 - `${sample}.fastp.json`
 
-It also writes an aggregated MultiQC report to `results/qc/multiqc/`:
+It also writes an aggregated MultiQC report to `results/qc/multiqc/` covering
+`fastp` outputs and, when alignment runs, `samtools flagstat` summaries:
 
 - `multiqc_report.html`
 - `multiqc_data/`
@@ -72,6 +74,10 @@ If `--star_index` is provided, the pipeline also writes STAR alignment outputs t
 - `${sample}.sorted.bam.bai`
 - `${sample}.Log.final.out`
 - `${sample}.SJ.out.tab`
+
+It also writes post-alignment QC summaries to `results/qc/alignment/`:
+
+- `${sample}.flagstat.txt`
 
 If `--annotation_gtf` is also provided, the pipeline writes count outputs to
 `results/counts/`:

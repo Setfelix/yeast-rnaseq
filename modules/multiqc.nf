@@ -26,5 +26,9 @@ process MULTIQC {
   sample	total_reads
   stub	1
   EOF
+  cat <<'EOF' > multiqc_data/multiqc_samtools_flagstat.txt
+  sample	mapped_passed
+  stub	2
+  EOF
   """
 }

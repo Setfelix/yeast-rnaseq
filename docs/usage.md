@@ -48,6 +48,7 @@ This scaffold currently includes:
 - FASTQ QC/trimming with `fastp`
 - MultiQC aggregation of `fastp` reports
 - optional STAR alignment of trimmed reads
+- post-alignment QC with `samtools flagstat`
 - optional `featureCounts` quantification from aligned BAMs
 - differential expression analysis with DESeq2
 
@@ -71,6 +72,7 @@ QC outputs are written to:
 - per-sample reports (`*.fastp.html`, `*.fastp.json`)
 - `results/qc/multiqc/`
 - aggregated report (`multiqc_report.html`) and parsed data directory (`multiqc_data/`)
+- MultiQC includes `fastp` metrics and, when alignment runs, `samtools flagstat` summaries
 
 If `star_index` is set, alignment outputs are written to:
 
@@ -78,6 +80,11 @@ If `star_index` is set, alignment outputs are written to:
 - coordinate-sorted BAMs (`*.sorted.bam`) and indexes (`*.sorted.bam.bai`)
 - STAR summary logs (`*.Log.final.out`)
 - splice junction tables (`*.SJ.out.tab`)
+
+Post-alignment QC outputs are written to:
+
+- `results/qc/alignment/`
+- `samtools flagstat` summaries (`*.flagstat.txt`)
 
 If `annotation_gtf` is also set, count outputs are written to:
 
