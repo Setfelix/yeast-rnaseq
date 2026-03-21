@@ -29,6 +29,7 @@ This scaffold currently includes:
 - input validation
 - samplesheet parsing
 - FASTQ QC/trimming with `fastp`
+- MultiQC aggregation of `fastp` reports
 - differential expression analysis with DESeq2
 
 ## QC parameters
@@ -43,6 +44,8 @@ QC outputs are written to:
 - `results/qc/fastp/`
 - per-sample trimmed reads (`*.trimmed_R1.fastq.gz`, `*.trimmed_R2.fastq.gz`)
 - per-sample reports (`*.fastp.html`, `*.fastp.json`)
+- `results/qc/multiqc/`
+- aggregated report (`multiqc_report.html`) and parsed data directory (`multiqc_data/`)
 
 ## Differential expression parameters
 

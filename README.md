@@ -9,6 +9,7 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 - `params.yml`: example runtime parameters
 - `conf/`: base, Singularity, and profile-specific config
 - `modules/fastp.nf`: FASTQ QC/trimming module using `fastp`
+- `modules/multiqc.nf`: aggregate QC reporting with `MultiQC`
 - `containers/Singularity.def`: container recipe with core RNA-seq tools and DESeq2
 - `assets/samplesheet.example.csv`: example input sheet
 - `assets/samplesheet.de.example.csv`: DE-ready example input sheet with condition labels
@@ -49,6 +50,11 @@ The pipeline writes per-sample `fastp` outputs to `results/qc/fastp/`:
 - `${sample}.trimmed_R2.fastq.gz`
 - `${sample}.fastp.html`
 - `${sample}.fastp.json`
+
+It also writes an aggregated MultiQC report to `results/qc/multiqc/`:
+
+- `multiqc_report.html`
+- `multiqc_data/`
 
 ## License
 

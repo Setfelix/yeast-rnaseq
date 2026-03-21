@@ -1,6 +1,7 @@
 nextflow.enable.dsl = 2
 
 include { FASTP } from './modules/fastp'
+include { MULTIQC } from './modules/multiqc'
 
 /*
  * Validate required runtime parameters.
@@ -131,6 +132,12 @@ workflow {
     }
 
   FASTP(samples_ch)
+
+  MULTIQC(
+    FASTP.out.html
+      .mix(FASTP.out.json)
+      .collect()
+  )
 
   DIFFERENTIAL_EXPRESSION(
     file(params.counts_matrix),
