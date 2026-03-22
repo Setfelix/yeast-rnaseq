@@ -173,7 +173,9 @@ workflow {
       if (missing) {
         error "Missing required column(s) in samplesheet row: ${missing.join(', ')}"
       }
-      tuple(row.sample, row.fastq_1, row.fastq_2, row.strandedness, row[params.condition_col])
+      def fastq1 = file(row.fastq_1, checkIfExists: true)
+      def fastq2 = file(row.fastq_2, checkIfExists: true)
+      tuple(row.sample, fastq1, fastq2, row.strandedness, row[params.condition_col])
     }
 
   def external_counts_ch = params.counts_matrix ? Channel.value(file(params.counts_matrix)) : null

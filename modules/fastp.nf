@@ -4,7 +4,7 @@ process FASTP {
   publishDir "${params.outdir}/qc/fastp", mode: 'copy'
 
   input:
-  tuple val(sample), val(fastq_1), val(fastq_2), val(strandedness), val(condition)
+  tuple val(sample), path(fastq_1), path(fastq_2), val(strandedness), val(condition)
 
   output:
   tuple val(sample), path("${sample}.trimmed_R1.fastq.gz"), path("${sample}.trimmed_R2.fastq.gz"), val(strandedness), val(condition), emit: reads

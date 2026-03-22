@@ -1,5 +1,5 @@
 sample,fastq_1,fastq_2,strandedness,condition
-ctrl_1,data/ctrl_1_R1.fastq.gz,data/ctrl_1_R2.fastq.gz,unstranded,control
-ctrl_2,data/ctrl_2_R1.fastq.gz,data/ctrl_2_R2.fastq.gz,unstranded,control
-treat_1,data/treat_1_R1.fastq.gz,data/treat_1_R2.fastq.gz,unstranded,treated
-treat_2,data/treat_2_R1.fastq.gz,data/treat_2_R2.fastq.gz,unstranded,treated
+ctrl_1,assets/data/ctrl_1_R1.fastq.gz,assets/data/ctrl_1_R2.fastq.gz,unstranded,control
+ctrl_2,assets/data/ctrl_2_R1.fastq.gz,assets/data/ctrl_2_R2.fastq.gz,unstranded,control
+treat_1,assets/data/treat_1_R1.fastq.gz,assets/data/treat_1_R2.fastq.gz,unstranded,treated
+treat_2,assets/data/treat_2_R1.fastq.gz,assets/data/treat_2_R2.fastq.gz,unstranded,treated
