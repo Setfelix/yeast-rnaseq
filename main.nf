@@ -206,10 +206,27 @@ workflow {
     multiqc_inputs = multiqc_inputs.mix(ALIGNMENT_QC.out.flagstat)
 
     if (params.annotation_gtf) {
+      def featurecounts_input_ch = STAR_ALIGN.out.bam
+        .map { sample, bam, bai, strandedness, condition ->
+          [
+            sample      : sample as String,
+            bam         : bam,
+            strandedness: strandedness as String
+          ]
+        }
+        .collect()
+        .map { bamRows ->
+          def sampleNames = bamRows.collect { row -> row.sample }
+          def strandednessValues = bamRows.collect { row -> row.strandedness }.toSet().toList()
+          if (strandednessValues.size() != 1) {
+            error "FEATURECOUNTS currently requires the same strandedness for all samples; found: ${strandednessValues.join(', ')}"
+          }
+          def bamPaths = bamRows.collect { row -> row.bam }
+        tuple(sampleNames.join('\t'), strandednessValues[0], bamPaths)
+        }
+
       FEATURECOUNTS(
-        STAR_ALIGN.out.bam
-          .map { sample, bam, bai, strandedness, condition -> bam }
-          .collect(),
+        featurecounts_input_ch,
         file(params.annotation_gtf)
       )
       generated_counts_ch = FEATURECOUNTS.out.counts
