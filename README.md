@@ -1,6 +1,6 @@
 # yeast-rnaseq-nf
 
-Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
+Minimal, reproducible **Nextflow DSL2** RNA-seq pipeline from FASTQ to differential expression.
 
 ## Repository layout
 
@@ -10,10 +10,10 @@ Minimal, reproducible scaffold for a **Nextflow DSL2** yeast RNA-seq pipeline.
 - `conf/`: base, Singularity, and profile-specific config
 - `modules/fastp.nf`: FASTQ QC/trimming module using `fastp`
 - `modules/multiqc.nf`: aggregate QC reporting with `MultiQC`
-- `modules/star_index.nf`: optional STAR genome index generation
-- `modules/star_align.nf`: optional STAR alignment module
+- `modules/star_index.nf`: STAR genome index generation when needed
+- `modules/star_align.nf`: STAR alignment module
 - `modules/alignment_qc.nf`: post-alignment QC with `samtools flagstat`
-- `modules/featurecounts.nf`: optional `featureCounts` gene quantification
+- `modules/featurecounts.nf`: per-sample `featureCounts` quantification
 - `containers/Singularity.def`: container recipe with core RNA-seq tools and DESeq2
 - `assets/samplesheet.example.csv`: example input sheet
 - `assets/samplesheet.de.example.csv`: DE-ready example input sheet with condition labels
@@ -46,14 +46,19 @@ The pipeline writes:
 - `results/differential_expression.tsv`: all genes with BH-FDR corrected `padj`
 - `results/differential_expression_fdr.tsv`: genes passing `padj <= fdr_threshold`
 
-Differential expression can use either:
+By default, the pipeline runs:
 
-- an external counts matrix via `--counts_matrix`
-- pipeline-generated counts when both `--star_index` and `--annotation_gtf` are provided
+- `FASTP`
+- `STAR_INDEX` or a supplied `star_index`
+- `STAR_ALIGN`
+- `ALIGNMENT_QC`
+- `FEATURECOUNTS`
+- `MULTIQC`
+- `DIFFERENTIAL_EXPRESSION`
 
-By default (`--de_counts_source auto`), the pipeline prefers generated counts when
-available and otherwise falls back to `--counts_matrix`. You can force
-`external` or `generated` explicitly if needed.
+Differential expression uses generated counts by default
+(`--de_counts_source generated`). Use `--de_counts_source external` with
+`--counts_matrix` only when you want to bypass the generated count matrix.
 
 Reference-related paths are configured in `params.yml`:
 
@@ -79,10 +84,9 @@ It also writes an aggregated MultiQC report to `results/qc/multiqc/` covering
 - `multiqc_report.html`
 - `multiqc_data/`
 
-## Optional alignment output
+## Alignment output
 
-If `--star_index` is provided, the pipeline also writes STAR alignment outputs to
-`results/alignment/star/`:
+The pipeline writes STAR alignment outputs to `results/alignment/star/`:
 
 - `${sample}.sorted.bam`
 - `${sample}.sorted.bam.bai`
@@ -96,11 +100,15 @@ It also writes post-alignment QC summaries to `results/qc/alignment/`:
 
 - `${sample}.flagstat.txt`
 
-If `--annotation_gtf` is also provided, the pipeline writes count outputs to
-`results/counts/`:
+The pipeline writes count outputs to `results/counts/`:
 
 - `featurecounts.tsv`
 - `featurecounts.summary`
+
+Per-sample count outputs are also written to `results/counts/per_sample/`:
+
+- `${sample}.featurecounts.tsv`
+- `${sample}.featurecounts.summary`
 
 ## License
 

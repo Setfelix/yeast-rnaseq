@@ -20,11 +20,10 @@ Or override parameters on the CLI:
 ```bash
 nextflow run main.nf \
   --samplesheet assets/samplesheet.de.example.csv \
-  --counts_matrix assets/counts.example.tsv \
   --outdir results
 ```
 
-To enable alignment, provide a STAR genome index directory:
+To use a prebuilt STAR genome index instead of generating one:
 
 ```bash
 nextflow run main.nf \
@@ -38,26 +37,23 @@ Reference-related inputs can be declared in `params.yml`:
 - `star_index`: STAR genome index directory
 - `annotation_gtf`: gene annotation GTF path
 
-If `star_index` is omitted, the pipeline can build it from `reference_fasta` and
+If `star_index` is omitted, the pipeline builds it from `reference_fasta` and
 `annotation_gtf`.
 
-To generate counts from aligned reads and use them for downstream DE analysis:
+The default pipeline path is:
 
 ```bash
 nextflow run main.nf \
-  -params-file params.yml \
-  --star_index /abs/path/to/star_index \
-  --annotation_gtf /abs/path/to/genes.gtf
+  -params-file params.yml
 ```
 
-To force DE to use the external matrix even when generated counts are available:
+To force DE to use an external count matrix instead:
 
 ```bash
 nextflow run main.nf \
   -params-file params.yml \
-  --star_index /abs/path/to/star_index \
-  --annotation_gtf /abs/path/to/genes.gtf \
-  --de_counts_source external
+  --de_counts_source external \
+  --counts_matrix /abs/path/to/counts.tsv
 ```
 
 This scaffold currently includes:
@@ -66,9 +62,9 @@ This scaffold currently includes:
 - samplesheet parsing
 - FASTQ QC/trimming with `fastp`
 - MultiQC aggregation of `fastp` reports
-- optional STAR alignment of trimmed reads
+- STAR alignment of trimmed reads
 - post-alignment QC with `samtools flagstat`
-- optional `featureCounts` quantification from aligned BAMs
+- per-sample `featureCounts` quantification and merged count matrix output
 - differential expression analysis with DESeq2
 
 ## QC parameters
@@ -77,14 +73,14 @@ Configured in `params.yml`:
 
 - `fastp_threads`: thread count passed to `fastp`
 - `fastp_extra`: optional additional `fastp` CLI arguments
-- `reference_fasta`: optional reference genome FASTA path
+- `reference_fasta`: reference genome FASTA path used when `star_index` is not supplied
 - `star_index`: optional STAR genome index directory; if unset, the pipeline can build one from `reference_fasta` and `annotation_gtf`
 - `star_index_threads`: thread count passed to STAR genome generation
 - `star_index_overhang`: STAR `sjdbOverhang` used during genome generation
 - `star_index_extra`: optional additional STAR genome generation CLI arguments
 - `star_threads`: thread count passed to STAR and `samtools index`
 - `star_extra`: optional additional STAR CLI arguments
-- `annotation_gtf`: optional annotation file for `featureCounts`; requires `star_index`
+- `annotation_gtf`: required annotation file for STAR index generation and `featureCounts`
 - `featurecounts_threads`: thread count passed to `featureCounts`
 - `featurecounts_extra`: optional additional `featureCounts` CLI arguments
 
@@ -97,7 +93,7 @@ QC outputs are written to:
 - aggregated report (`multiqc_report.html`) and parsed data directory (`multiqc_data/`)
 - MultiQC includes `fastp` metrics and, when alignment runs, `samtools flagstat` summaries
 
-If `star_index` is set, alignment outputs are written to:
+Alignment outputs are written to:
 
 - `results/alignment/star/`
 - coordinate-sorted BAMs (`*.sorted.bam`) and indexes (`*.sorted.bam.bai`)
@@ -114,29 +110,27 @@ Post-alignment QC outputs are written to:
 - `results/qc/alignment/`
 - `samtools flagstat` summaries (`*.flagstat.txt`)
 
-If `annotation_gtf` is also set, count outputs are written to:
+Count outputs are written to:
 
 - `results/counts/`
 - gene count matrix (`featurecounts.tsv`)
 - `featureCounts` summary (`featurecounts.summary`)
+- `results/counts/per_sample/`
+- per-sample count tables (`*.featurecounts.tsv`) and summaries (`*.featurecounts.summary`)
 
 ## Differential expression parameters
 
 Configured in `params.yml`:
 
-- `counts_matrix`: optional external TSV with first column `gene` and remaining columns as sample IDs
-- `de_counts_source`: one of `auto`, `external`, or `generated`
+- `counts_matrix`: external TSV with first column `gene` and remaining columns as sample IDs; only used with `de_counts_source: external`
+- `de_counts_source`: one of `external` or `generated`
 - `condition_col`: samplesheet column used for group labels
 - `control_level`: reference condition
 - `treatment_level`: condition compared against control
 - `fdr_threshold`: significance cutoff for filtered output
 
-Provide either:
-
-- `counts_matrix`
-- or `annotation_gtf` together with `star_index` to generate counts in-pipeline
-
-With `de_counts_source: auto`, generated counts are preferred when available.
+Default behavior is `de_counts_source: generated`.
+Use `de_counts_source: external` only when you explicitly want to bypass generated counts.
 
 Expected samplesheet columns:
 

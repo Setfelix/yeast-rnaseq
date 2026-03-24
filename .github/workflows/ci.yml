@@ -30,11 +30,10 @@ jobs:
       - name: Stub pipeline run
         run: nextflow run main.nf -params-file params.yml -stub-run
 
-      - name: Stub generated-index pipeline run
+      - name: Stub external-count override run
         run: |
           nextflow run main.nf \
             -params-file params.yml \
             -stub-run \
-            --reference_fasta assets/reference.example.fa \
-            --annotation_gtf assets/genes.example.gtf \
-            --de_counts_source generated
+            --de_counts_source external \
+            --counts_matrix assets/counts.example.tsv

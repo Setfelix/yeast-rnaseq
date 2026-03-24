@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+.venv/
 
 # Nextflow
 .nextflow/
@@ -10,6 +11,9 @@ results/
 *.txt
 *.dot
 *.trace
+flowchart*.mmd
+flowchart*.png
+flowchart*.svg
 
 # Container/cache
 .singularity/

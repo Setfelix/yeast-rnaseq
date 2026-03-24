@@ -19,15 +19,14 @@ def validateParams() {
     error "Samplesheet not found: ${params.samplesheet}"
   }
 
-  if (!['auto', 'external', 'generated'].contains(params.de_counts_source)) {
-    error "Invalid --de_counts_source: ${params.de_counts_source}. Use one of: auto, external, generated"
+  if (!['external', 'generated'].contains(params.de_counts_source)) {
+    error "Invalid --de_counts_source: ${params.de_counts_source}. Use one of: external, generated"
   }
 
-  if (!params.counts_matrix && !params.annotation_gtf) {
-    error "Provide either --counts_matrix or --annotation_gtf"
-  }
-
-  if (params.counts_matrix) {
+  if (params.de_counts_source == 'external') {
+    if (!params.counts_matrix) {
+      error "--de_counts_source external requires --counts_matrix"
+    }
     def counts = file(params.counts_matrix)
     if (!counts.exists()) {
       error "Counts matrix not found: ${params.counts_matrix}"
@@ -58,22 +57,21 @@ def validateParams() {
     }
   }
 
-  if (params.annotation_gtf) {
-    def annotation = file(params.annotation_gtf)
-    if (!annotation.exists()) {
-      error "Annotation GTF not found: ${params.annotation_gtf}"
-    }
-    if (!params.star_index && !params.reference_fasta) {
-      error "--annotation_gtf requires either --star_index or --reference_fasta"
-    }
+  if (!params.annotation_gtf) {
+    error "Missing required parameter: --annotation_gtf"
   }
 
-  if (params.de_counts_source == 'external' && !params.counts_matrix) {
-    error "--de_counts_source external requires --counts_matrix"
+  def annotation = file(params.annotation_gtf)
+  if (!annotation.exists()) {
+    error "Annotation GTF not found: ${params.annotation_gtf}"
+  }
+
+  if (!params.star_index && !params.reference_fasta) {
+    error "Provide either --star_index or --reference_fasta"
   }
 
   if (params.de_counts_source == 'generated' && !params.annotation_gtf) {
-    error "--de_counts_source generated requires --annotation_gtf and either --star_index or --reference_fasta"
+    error "--de_counts_source generated requires --annotation_gtf"
   }
 }
 
@@ -83,7 +81,7 @@ process DIFFERENTIAL_EXPRESSION {
   publishDir params.outdir, mode: 'copy'
 
   input:
-  path counts_matrix
+  path count_inputs
   path samplesheet
 
   output:
@@ -95,21 +93,37 @@ process DIFFERENTIAL_EXPRESSION {
   Rscript -e '
   suppressPackageStartupMessages(library(DESeq2))
 
-  counts <- read.table("${counts_matrix}", header=TRUE, sep="\t", check.names=FALSE)
-  if (!("gene" %in% colnames(counts))) {
-    stop("Counts matrix must include a gene column")
-  }
-
-  rownames(counts) <- counts$gene
-  counts$gene <- NULL
-  counts <- round(as.matrix(counts))
-
   meta <- read.csv("${samplesheet}", stringsAsFactors=FALSE)
   required <- c("sample", "${params.condition_col}")
   missing <- setdiff(required, colnames(meta))
   if (length(missing) > 0) {
     stop(paste("Samplesheet missing required column(s):", paste(missing, collapse=", ")))
   }
+
+  count_paths <- commandArgs(trailingOnly=TRUE)
+  if (length(count_paths) == 0) {
+    stop("No count inputs provided to differential expression")
+  }
+
+  if (length(count_paths) == 1) {
+    counts <- read.table(count_paths[[1]], header=TRUE, sep="\t", check.names=FALSE)
+    if (!("gene" %in% colnames(counts))) {
+      stop("Counts matrix must include a gene column")
+    }
+  } else {
+    count_tables <- lapply(count_paths, function(path) {
+      tab <- read.table(path, header=TRUE, sep="\t", check.names=FALSE)
+      if (ncol(tab) != 2 || !"gene" %in% colnames(tab)) {
+        stop(paste("Per-sample counts file must have columns gene and sample:", path))
+      }
+      tab
+    })
+    counts <- Reduce(function(x, y) merge(x, y, by="gene", sort=FALSE), count_tables)
+  }
+
+  rownames(counts) <- counts$gene
+  counts$gene <- NULL
+  counts <- round(as.matrix(counts))
 
   if (!all(meta$sample %in% colnames(counts))) {
     missing_samples <- meta$sample[!(meta$sample %in% colnames(counts))]
@@ -142,7 +156,7 @@ process DIFFERENTIAL_EXPRESSION {
 
   sig <- subset(out, !is.na(padj) & padj <= ${params.fdr_threshold})
   write.table(sig, file="differential_expression_fdr.tsv", sep="\t", quote=FALSE, row.names=FALSE)
-  '
+  ' ${count_inputs}
   """
 
   stub:
@@ -186,65 +200,40 @@ workflow {
 
   def multiqc_inputs = FASTP.out.html.mix(FASTP.out.json)
 
-  if (params.star_index || params.reference_fasta) {
-    if (params.star_index) {
-      resolved_star_index_ch = Channel.value(file(params.star_index))
-    } else {
-      STAR_INDEX(
-        file(params.reference_fasta),
-        file(params.annotation_gtf)
-      )
-      resolved_star_index_ch = STAR_INDEX.out.index
-    }
-
-    def star_reads_ch = FASTP.out.reads.combine(resolved_star_index_ch).map { sample, read_1, read_2, strandedness, condition, star_index ->
-      tuple(sample, read_1, read_2, strandedness, condition, star_index)
-    }
-
-    STAR_ALIGN(star_reads_ch)
-
-    ALIGNMENT_QC(STAR_ALIGN.out.bam)
-
-    multiqc_inputs = multiqc_inputs.mix(ALIGNMENT_QC.out.flagstat)
-
-    if (params.annotation_gtf) {
-      def featurecounts_input_ch = STAR_ALIGN.out.bam
-        .map { sample, bam, bai, strandedness, condition ->
-          [
-            sample      : sample as String,
-            bam         : bam,
-            strandedness: strandedness as String
-          ]
-        }
-        .collect()
-        .map { bamRows ->
-          def sampleNames = bamRows.collect { row -> row.sample }
-          def strandednessValues = bamRows.collect { row -> row.strandedness }.toSet().toList()
-          if (strandednessValues.size() != 1) {
-            error "FEATURECOUNTS currently requires the same strandedness for all samples; found: ${strandednessValues.join(', ')}"
-          }
-          def bamPaths = bamRows.collect { row -> row.bam }
-        tuple(sampleNames.join('\t'), strandednessValues[0], bamPaths)
-        }
-
-      FEATURECOUNTS(
-        featurecounts_input_ch,
-        file(params.annotation_gtf)
-      )
-      generated_counts_ch = FEATURECOUNTS.out.counts
-    }
+  if (params.star_index) {
+    resolved_star_index_ch = Channel.value(file(params.star_index))
+  } else {
+    STAR_INDEX(
+      file(params.reference_fasta),
+      file(params.annotation_gtf)
+    )
+    resolved_star_index_ch = STAR_INDEX.out.index
   }
+
+  def star_reads_ch = FASTP.out.reads.combine(resolved_star_index_ch).map { sample, read_1, read_2, strandedness, condition, star_index ->
+    tuple(sample, read_1, read_2, strandedness, condition, star_index)
+  }
+
+  STAR_ALIGN(star_reads_ch)
+
+  ALIGNMENT_QC(STAR_ALIGN.out.bam)
+
+  multiqc_inputs = multiqc_inputs.mix(ALIGNMENT_QC.out.flagstat)
+
+  FEATURECOUNTS(
+    STAR_ALIGN.out.bam,
+    file(params.annotation_gtf)
+  )
+
+  generated_counts_ch = FEATURECOUNTS.out.counts.collect()
 
   def counts_for_de
   switch (params.de_counts_source) {
     case 'external':
       counts_for_de = external_counts_ch
       break
-    case 'generated':
-      counts_for_de = generated_counts_ch
-      break
     default:
-      counts_for_de = generated_counts_ch ?: external_counts_ch
+      counts_for_de = generated_counts_ch
   }
 
   MULTIQC(
