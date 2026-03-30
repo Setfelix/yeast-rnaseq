@@ -100,15 +100,14 @@ It also writes post-alignment QC summaries to `results/qc/alignment/`:
 
 - `${sample}.flagstat.txt`
 
-The pipeline writes count outputs to `results/counts/`:
-
-- `featurecounts.tsv`
-- `featurecounts.summary`
-
-Per-sample count outputs are also written to `results/counts/per_sample/`:
+The pipeline writes per-sample count outputs to `results/counts/per_sample/`:
 
 - `${sample}.featurecounts.tsv`
 - `${sample}.featurecounts.summary`
+
+These per-sample count tables are merged internally by the differential
+expression step. The merged matrix is used as DESeq2 input, but it is not
+currently published as a standalone file under `results/counts/`.
 
 ## License
 

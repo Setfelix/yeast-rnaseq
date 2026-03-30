@@ -64,7 +64,7 @@ This scaffold currently includes:
 - MultiQC aggregation of `fastp` reports
 - STAR alignment of trimmed reads
 - post-alignment QC with `samtools flagstat`
-- per-sample `featureCounts` quantification and merged count matrix output
+- per-sample `featureCounts` quantification
 - differential expression analysis with DESeq2
 
 ## QC parameters
@@ -112,11 +112,12 @@ Post-alignment QC outputs are written to:
 
 Count outputs are written to:
 
-- `results/counts/`
-- gene count matrix (`featurecounts.tsv`)
-- `featureCounts` summary (`featurecounts.summary`)
 - `results/counts/per_sample/`
 - per-sample count tables (`*.featurecounts.tsv`) and summaries (`*.featurecounts.summary`)
+
+Those per-sample count tables are merged internally by the differential
+expression step when `de_counts_source: generated` is used. The merged count
+matrix is not currently published as a standalone file in `results/counts/`.
 
 ## Differential expression parameters
 

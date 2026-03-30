@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ubuntu:22.04
+From: ubuntu:24.04
 
 %labels
   Author yeast-rnaseq-nf
@@ -12,22 +12,26 @@ From: ubuntu:22.04
 %post
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential \
     fastp \
+    gfortran \
+    multiqc \
+    pkg-config \
     samtools \
     subread \
     rna-star \
     wget \
     python3 \
-    python3-pip \
     r-base \
+    r-bioc-deseq2 \
     libcurl4-openssl-dev \
+    libpng-dev \
     libssl-dev \
     libxml2-dev \
+    zlib1g-dev \
     ca-certificates
 
-  python3 -m pip install --no-cache-dir multiqc
-  Rscript -e "install.packages('BiocManager', repos='https://cloud.r-project.org')"
-  Rscript -e "BiocManager::install('DESeq2', ask=FALSE, update=FALSE)"
+  Rscript -e "suppressPackageStartupMessages(library(DESeq2)); cat(as.character(packageVersion('DESeq2')), '\n')"
 
   apt-get clean
   rm -rf /var/lib/apt/lists/*
