@@ -252,12 +252,10 @@ workflow {
   generated_counts_ch = FEATURECOUNTS.out.counts.collect()
 
   def counts_for_de
-  switch (params.de_counts_source) {
-    case 'external':
-      counts_for_de = external_counts_ch
-      break
-    default:
-      counts_for_de = generated_counts_ch
+  if (params.de_counts_source == 'external') {
+    counts_for_de = external_counts_ch
+  } else {
+    counts_for_de = generated_counts_ch
   }
 
   MULTIQC(
