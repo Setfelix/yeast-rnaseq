@@ -5,6 +5,7 @@ include { MULTIQC } from './modules/multiqc'
 include { STAR_INDEX } from './modules/star_index'
 include { STAR_ALIGN } from './modules/star_align'
 include { ALIGNMENT_QC } from './modules/alignment_qc'
+include { INFER_STRANDEDNESS } from './modules/infer_strandedness'
 include { FEATURECOUNTS } from './modules/featurecounts'
 
 /*
@@ -64,6 +65,13 @@ def validateParams() {
   def annotation = file(params.annotation_gtf)
   if (!annotation.exists()) {
     error "Annotation GTF not found: ${params.annotation_gtf}"
+  }
+
+  if (params.annotation_bed12) {
+    def annotationBed12 = file(params.annotation_bed12)
+    if (!annotationBed12.exists()) {
+      error "Annotation BED12 not found: ${params.annotation_bed12}"
+    }
   }
 
   if (!params.star_index && !params.reference_fasta) {
@@ -182,14 +190,18 @@ workflow {
     .fromPath(params.samplesheet)
     .splitCsv(header: true)
     .map { row ->
-      def required = ['sample', 'fastq_1', 'fastq_2', 'strandedness', params.condition_col as String]
+      def required = ['sample', 'fastq_1', 'fastq_2', params.condition_col as String]
       def missing = required.findAll { !row.containsKey(it) || !row[it] }
       if (missing) {
         error "Missing required column(s) in samplesheet row: ${missing.join(', ')}"
       }
       def fastq1 = file(row.fastq_1, checkIfExists: true)
       def fastq2 = file(row.fastq_2, checkIfExists: true)
-      tuple(row.sample, fastq1, fastq2, row.strandedness, row[params.condition_col])
+      def strandedness = row.containsKey('strandedness') && row.strandedness ? row.strandedness.toString().trim().toLowerCase() : ''
+      if (!strandedness && !params.annotation_bed12) {
+        error "Samplesheet row for '${row.sample}' is missing strandedness. Provide a strandedness value or set --annotation_bed12 for inference."
+      }
+      tuple(row.sample, fastq1, fastq2, strandedness, row[params.condition_col])
     }
 
   def external_counts_ch = params.counts_matrix ? Channel.value(file(params.counts_matrix)) : null
@@ -220,8 +232,20 @@ workflow {
 
   multiqc_inputs = multiqc_inputs.mix(ALIGNMENT_QC.out.flagstat)
 
+  def counts_input_ch = STAR_ALIGN.out.bam
+  if (params.annotation_bed12) {
+    INFER_STRANDEDNESS(
+      STAR_ALIGN.out.bam,
+      file(params.annotation_bed12)
+    )
+    multiqc_inputs = multiqc_inputs.mix(INFER_STRANDEDNESS.out.report)
+    counts_input_ch = INFER_STRANDEDNESS.out.resolved.map { sample, bam, bai, condition, strandedness_file ->
+      tuple(sample, bam, bai, strandedness_file.text.trim(), condition)
+    }
+  }
+
   FEATURECOUNTS(
-    STAR_ALIGN.out.bam,
+    counts_input_ch,
     file(params.annotation_gtf)
   )
 

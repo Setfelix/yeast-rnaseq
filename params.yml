@@ -16,6 +16,9 @@ star_index_extra: ""
 star_threads: 4
 star_extra: ""
 annotation_gtf: assets/genes.example.gtf
+annotation_bed12: null
+strandedness_inference_threshold: 0.8
+strandedness_unstranded_tolerance: 0.1
 featurecounts_threads: 2
 featurecounts_extra: ""
 outdir: results

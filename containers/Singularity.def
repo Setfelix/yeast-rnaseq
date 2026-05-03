@@ -7,7 +7,7 @@ From: ubuntu:24.04
 
 %environment
   export LC_ALL=C
-  export PATH=/usr/local/bin:$PATH
+  export PATH=/opt/rseqc/bin:/usr/local/bin:$PATH
 
 %post
   apt-get update
@@ -22,6 +22,7 @@ From: ubuntu:24.04
     rna-star \
     wget \
     python3 \
+    python3-venv \
     r-base \
     r-bioc-deseq2 \
     libcurl4-openssl-dev \
@@ -30,6 +31,10 @@ From: ubuntu:24.04
     libxml2-dev \
     zlib1g-dev \
     ca-certificates
+
+  python3 -m venv /opt/rseqc
+  /opt/rseqc/bin/pip install --no-cache-dir RSeQC
+  ln -sf /opt/rseqc/bin/infer_experiment.py /usr/local/bin/infer_experiment.py
 
   Rscript -e "suppressPackageStartupMessages(library(DESeq2)); cat(as.character(packageVersion('DESeq2')), '\n')"
 

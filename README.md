@@ -13,10 +13,12 @@ Minimal, reproducible **Nextflow DSL2** RNA-seq pipeline from FASTQ to different
 - `modules/star_index.nf`: STAR genome index generation when needed
 - `modules/star_align.nf`: STAR alignment module
 - `modules/alignment_qc.nf`: post-alignment QC with `samtools flagstat`
+- `modules/infer_strandedness.nf`: infer strandedness with `infer_experiment.py` when samplesheet values are missing
 - `modules/featurecounts.nf`: per-sample `featureCounts` quantification
 - `containers/Singularity.def`: container recipe with core RNA-seq tools and DESeq2
 - `assets/samplesheet.example.csv`: example input sheet
 - `assets/samplesheet.de.example.csv`: DE-ready example input sheet with condition labels
+- `assets/samplesheet.de.infer.example.csv`: DE-ready example input sheet without strandedness values
 - `assets/counts.example.tsv`: example gene count matrix
 - `.github/workflows/ci.yml`: CI checks (`nextflow config`, `-stub-run`)
 - `docs/usage.md`: usage and container build instructions
@@ -65,6 +67,7 @@ Reference-related paths are configured in `params.yml`:
 - `reference_fasta`
 - `star_index`
 - `annotation_gtf`
+- `annotation_bed12` (required only when strandedness must be inferred)
 
 If `star_index` is not provided, the pipeline can build a STAR index from
 `reference_fasta` and `annotation_gtf`.
@@ -99,6 +102,12 @@ If the STAR index is generated in-pipeline, it is written to
 It also writes post-alignment QC summaries to `results/qc/alignment/`:
 
 - `${sample}.flagstat.txt`
+
+When `strandedness` is omitted from the samplesheet and `annotation_bed12` is
+provided, the pipeline infers strandedness after alignment and writes reports to
+`results/qc/strandedness/`:
+
+- `${sample}.infer_experiment.txt`
 
 The pipeline writes per-sample count outputs to `results/counts/per_sample/`:
 

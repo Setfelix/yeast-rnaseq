@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,condition
+ctrl_1,assets/data/ctrl_1_R1.fastq.gz,assets/data/ctrl_1_R2.fastq.gz,control
+ctrl_2,assets/data/ctrl_2_R1.fastq.gz,assets/data/ctrl_2_R2.fastq.gz,control
+treat_1,assets/data/treat_1_R1.fastq.gz,assets/data/treat_1_R2.fastq.gz,treated
+treat_2,assets/data/treat_2_R1.fastq.gz,assets/data/treat_2_R2.fastq.gz,treated

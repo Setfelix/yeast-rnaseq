@@ -36,6 +36,7 @@ Reference-related inputs can be declared in `params.yml`:
 - `reference_fasta`: reference genome FASTA path
 - `star_index`: STAR genome index directory
 - `annotation_gtf`: gene annotation GTF path
+- `annotation_bed12`: BED12 annotation used by `infer_experiment.py` when strandedness is not supplied in the samplesheet
 
 If `star_index` is omitted, the pipeline builds it from `reference_fasta` and
 `annotation_gtf`.
@@ -64,6 +65,7 @@ This scaffold currently includes:
 - MultiQC aggregation of `fastp` reports
 - STAR alignment of trimmed reads
 - post-alignment QC with `samtools flagstat`
+- optional strandedness inference with `infer_experiment.py` when samplesheet values are missing
 - per-sample `featureCounts` quantification
 - differential expression analysis with DESeq2
 
@@ -81,6 +83,9 @@ Configured in `params.yml`:
 - `star_threads`: thread count passed to STAR and `samtools index`
 - `star_extra`: optional additional STAR CLI arguments
 - `annotation_gtf`: required annotation file for STAR index generation and `featureCounts`
+- `annotation_bed12`: BED12 annotation required only when strandedness is inferred after alignment
+- `strandedness_inference_threshold`: minimum dominant orientation fraction required to call `forward` or `reverse`
+- `strandedness_unstranded_tolerance`: maximum difference between orientation fractions to classify a sample as `unstranded`
 - `featurecounts_threads`: thread count passed to `featureCounts`
 - `featurecounts_extra`: optional additional `featureCounts` CLI arguments
 
@@ -110,6 +115,11 @@ Post-alignment QC outputs are written to:
 - `results/qc/alignment/`
 - `samtools flagstat` summaries (`*.flagstat.txt`)
 
+If strandedness is inferred, the pipeline also writes:
+
+- `results/qc/strandedness/`
+- `infer_experiment.py` reports (`*.infer_experiment.txt`)
+
 Count outputs are written to:
 
 - `results/counts/per_sample/`
@@ -135,7 +145,36 @@ Use `de_counts_source: external` only when you explicitly want to bypass generat
 
 Expected samplesheet columns:
 
-- `sample,fastq_1,fastq_2,strandedness,condition`
+- required: `sample,fastq_1,fastq_2,condition`
+- optional: `strandedness`
+
+If `strandedness` is omitted for any sample, you must provide
+`annotation_bed12`, and the pipeline will infer strandedness after alignment.
+Accepted explicit strandedness values are:
+
+- `unstranded`
+- `forward`
+- `reverse`
+
+Example with explicit strandedness:
+
+```csv
+sample,fastq_1,fastq_2,strandedness,condition
+ctrl_1,/path/to/ctrl_1_R1.fastq.gz,/path/to/ctrl_1_R2.fastq.gz,reverse,control
+ctrl_2,/path/to/ctrl_2_R1.fastq.gz,/path/to/ctrl_2_R2.fastq.gz,reverse,control
+treat_1,/path/to/treat_1_R1.fastq.gz,/path/to/treat_1_R2.fastq.gz,reverse,treated
+treat_2,/path/to/treat_2_R1.fastq.gz,/path/to/treat_2_R2.fastq.gz,reverse,treated
+```
+
+Example with strandedness inferred:
+
+```csv
+sample,fastq_1,fastq_2,condition
+ctrl_1,/path/to/ctrl_1_R1.fastq.gz,/path/to/ctrl_1_R2.fastq.gz,control
+ctrl_2,/path/to/ctrl_2_R1.fastq.gz,/path/to/ctrl_2_R2.fastq.gz,control
+treat_1,/path/to/treat_1_R1.fastq.gz,/path/to/treat_1_R2.fastq.gz,treated
+treat_2,/path/to/treat_2_R1.fastq.gz,/path/to/treat_2_R2.fastq.gz,treated
+```
 
 ## Output files
 
@@ -146,6 +185,16 @@ Expected samplesheet columns:
 
 ```bash
 nextflow run main.nf -params-file params.yml -stub-run
+```
+
+To validate the strandedness-inference path:
+
+```bash
+nextflow run main.nf \
+  -params-file params.yml \
+  -stub-run \
+  --samplesheet assets/samplesheet.de.infer.example.csv \
+  --annotation_bed12 assets/genes.example.bed12
 ```
 
 ## Build the Singularity/Apptainer container
@@ -171,4 +220,14 @@ You can override container path at runtime if needed:
 
 ```bash
 nextflow run main.nf -params-file params.yml --container file:///abs/path/to/container.sif
+```
+
+If strandedness should be inferred, include the BED12 annotation when running:
+
+```bash
+nextflow run main.nf -params-file params.yml -profile singularity \
+  --samplesheet /path/to/samplesheet.csv \
+  --reference_fasta /path/to/reference.fa \
+  --annotation_gtf /path/to/genes.gtf \
+  --annotation_bed12 /path/to/genes.bed12
 ```

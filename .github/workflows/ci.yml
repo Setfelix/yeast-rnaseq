@@ -30,6 +30,14 @@ jobs:
       - name: Stub pipeline run
         run: nextflow run main.nf -params-file params.yml -stub-run
 
+      - name: Stub strandedness-inference run
+        run: |
+          nextflow run main.nf \
+            -params-file params.yml \
+            -stub-run \
+            --samplesheet assets/samplesheet.de.infer.example.csv \
+            --annotation_bed12 assets/genes.example.bed12
+
       - name: Stub external-count override run
         run: |
           nextflow run main.nf \
