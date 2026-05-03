@@ -129,16 +129,16 @@ process DIFFERENTIAL_EXPRESSION {
     counts <- Reduce(function(x, y) merge(x, y, by="gene", sort=FALSE), count_tables)
   }
 
-  rownames(counts) <- counts$gene
-  counts$gene <- NULL
+  rownames(counts) <- counts[["gene"]]
+  counts[["gene"]] <- NULL
   counts <- round(as.matrix(counts))
 
-  if (!all(meta$sample %in% colnames(counts))) {
-    missing_samples <- meta$sample[!(meta$sample %in% colnames(counts))]
+  if (!all(meta[["sample"]] %in% colnames(counts))) {
+    missing_samples <- meta[["sample"]][!(meta[["sample"]] %in% colnames(counts))]
     stop(paste("Samplesheet sample(s) not in counts matrix:", paste(missing_samples, collapse=", ")))
   }
 
-  meta <- meta[match(colnames(counts), meta$sample), , drop=FALSE]
+  meta <- meta[match(colnames(counts), meta[["sample"]]), , drop=FALSE]
   meta[["${params.condition_col}"]] <- factor(meta[["${params.condition_col}"]], levels=c("${params.control_level}", "${params.treatment_level}"))
 
   if (sum(meta[["${params.condition_col}"]] == "${params.control_level}", na.rm=TRUE) < 2 ||
@@ -156,9 +156,9 @@ process DIFFERENTIAL_EXPRESSION {
   res <- results(dds, contrast=c("${params.condition_col}", "${params.treatment_level}", "${params.control_level}"))
 
   out <- as.data.frame(res)
-  out$gene <- rownames(out)
+  out[["gene"]] <- rownames(out)
   out <- out[, c("gene", "baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj")]
-  out <- out[order(out$padj, na.last=TRUE), ]
+  out <- out[order(out[["padj"]], na.last=TRUE), ]
 
   write.table(out, file="differential_expression.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 

@@ -25,7 +25,7 @@ process FEATURECOUNTS {
 
   featureCounts \
     -T ${params.featurecounts_threads} \
-    -s "$strand_mode" \
+    -s "\$strand_mode" \
     -a "${annotation_gtf}" \
     -o "${sample}.featurecounts.raw.tsv" \
     ${params.featurecounts_extra} \
